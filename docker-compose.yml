@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: nest-backend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    command: sh -c "npm run build && npm run start:prod"
