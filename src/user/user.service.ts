@@ -27,7 +27,10 @@ export class UserService {
     return user.save();
   }
 
-  async validateUser(email: string, password: string): Promise<User | null> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserDocument | null> {
     const user = await this.userModel.findOne({ email });
     if (!user) {
       throw new NotFoundException('User not found');
