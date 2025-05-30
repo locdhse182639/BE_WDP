@@ -1,8 +1,18 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
-import { AuthService } from 'src/auth/auth.service';
+import { AuthService } from '@/auth/auth.service';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { JwtPayload } from '@/auth/types/jwt-payload';
 
 @Controller('user')
 export class UserController {
@@ -14,6 +24,7 @@ export class UserController {
   @Post('register')
   async register(@Body() dto: CreateUserDto) {
     const user = await this.userService.register(dto);
+    console.log('User registered:', user);
     return { message: 'User registered successfully', user };
   }
 
@@ -24,5 +35,11 @@ export class UserController {
       throw new UnauthorizedException('Invalid credentials');
     }
     return this.authService.login(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@CurrentUser() user: JwtPayload) {
+    return user;
   }
 }
