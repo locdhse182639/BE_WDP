@@ -39,4 +39,8 @@ export class UserService {
     const isMatch = await bcrypt.compare(password, user.password);
     return isMatch ? user : null;
   }
+
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email });
+  }
 }
