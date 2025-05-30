@@ -15,7 +15,7 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('My API')
+    .setTitle('WDP Project API')
     .setDescription('API description')
     .setVersion('1.0')
     .addBearerAuth()

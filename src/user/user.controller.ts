@@ -15,7 +15,16 @@ import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { JwtPayload } from '@/auth/types/jwt-payload';
 import { RoleGuard } from '@/common/guards/role.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { RefreshTokenDto } from '@/auth/dto/refresh-token.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiUnauthorizedResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('User')
 @Controller('user')
 export class UserController {
   constructor(
@@ -24,6 +33,8 @@ export class UserController {
   ) {}
 
   @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User registered successfully' })
   async register(@Body() dto: CreateUserDto) {
     const user = await this.userService.register(dto);
     console.log('User registered:', user);
@@ -31,6 +42,9 @@ export class UserController {
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Login and receive access & refresh tokens' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   async login(@Body() dto: LoginUserDto) {
     const user = await this.userService.validateUser(dto.email, dto.password);
     if (!user) {
@@ -42,7 +56,19 @@ export class UserController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles('admin')
   @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current authenticated user info (admin only)' })
+  @ApiResponse({ status: 200, description: 'User info returned successfully' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   getMe(@CurrentUser() user: JwtPayload) {
     return user;
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access and refresh tokens' })
+  @ApiResponse({ status: 200, description: 'Tokens refreshed successfully' })
+  @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refreshToken);
   }
 }
