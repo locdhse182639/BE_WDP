@@ -13,6 +13,8 @@ import { AuthService } from '@/auth/auth.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { JwtPayload } from '@/auth/types/jwt-payload';
+import { RoleGuard } from '@/common/guards/role.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 
 @Controller('user')
 export class UserController {
@@ -37,7 +39,8 @@ export class UserController {
     return this.authService.login(user);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @Get('me')
   getMe(@CurrentUser() user: JwtPayload) {
     return user;
