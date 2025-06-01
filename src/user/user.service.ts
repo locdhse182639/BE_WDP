@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
 @Injectable()
 export class UserService {
@@ -42,5 +43,32 @@ export class UserService {
 
   async findByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email });
+  }
+
+  async findAll(query: PaginationQueryDto) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      filter.$or = [{ email: regex }, { name: regex }, { phone: regex }];
+    }
+
+    const [data, totalItems] = await Promise.all([
+      this.userModel.find(filter).skip(skip).limit(limit),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+        limit,
+      },
+    };
   }
 }
