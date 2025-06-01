@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import {
   ApiUnauthorizedResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -70,5 +72,14 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refreshToken);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all users with pagination' })
+  @ApiResponse({ status: 200, description: 'List of users' })
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
+  getAll(@Query() query: PaginationQueryDto) {
+    return this.userService.findAll(query);
   }
 }
