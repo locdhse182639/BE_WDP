@@ -11,10 +11,15 @@ import {
   ValidateNested,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import { SkuDimensionsDto } from './sku-dimension.dto';
+import { Types } from 'mongoose';
 
 export class CreateSkuDto {
   @IsMongoId()
+  @Transform(({ value }: { value: string }) =>
+    Types.ObjectId.createFromHexString(value),
+  )
   productId: string;
 
   @IsString()
@@ -77,14 +82,10 @@ export class CreateSkuDto {
   @IsOptional()
   weight?: number;
 
-  @ValidateNested()
-  @Type(() => Object)
   @IsOptional()
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-  };
+  @ValidateNested()
+  @Type(() => SkuDimensionsDto)
+  dimensions?: SkuDimensionsDto;
 
   @IsString()
   @IsOptional()

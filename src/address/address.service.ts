@@ -6,7 +6,7 @@ import { CreateAddressDto } from './dto/create-address.dto';
 
 @Injectable()
 export class AddressService {
-   constructor(
+  constructor(
     @InjectModel(Address.name)
     private readonly addressModel: Model<AddressDocument>,
   ) {}
