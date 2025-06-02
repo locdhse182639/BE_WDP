@@ -10,6 +10,7 @@ import { ProductModule } from './product/product.module';
 import { SkuModule } from './sku/sku.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import redisStore from 'cache-manager-ioredis';
+import { CartModule } from './cart/cart.module';
 
 if (!process.env.MONGO_URI) {
   throw new Error('MONGO_URI not set in environment variables');
@@ -36,6 +37,7 @@ if (!process.env.MONGO_URI) {
     AddressModule,
     ProductModule,
     SkuModule,
+    CartModule,
   ],
 })
 export class AppModule {}
