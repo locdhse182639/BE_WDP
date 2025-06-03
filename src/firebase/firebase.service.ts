@@ -1,15 +1,32 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import * as admin from 'firebase-admin';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import * as serviceAccount from '../../firebase-service-account.json';
+
+interface FirebaseCredentials {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+}
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   onModuleInit() {
     if (!getApps().length) {
+      const credentials = JSON.parse(
+        process.env.FIREBASE_CREDENTIALS!,
+      ) as FirebaseCredentials;
+
+      console.log('Initializing Firebase Admin SDK with credentials:', {
+        projectId: credentials.project_id,
+        clientEmail: credentials.client_email,
+      });
+
       initializeApp({
-        credential: cert(serviceAccount as admin.ServiceAccount),
+        credential: cert({
+          projectId: credentials.project_id,
+          clientEmail: credentials.client_email,
+          privateKey: credentials.private_key.replace(/\\n/g, '\n'),
+        }),
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       });
     }
