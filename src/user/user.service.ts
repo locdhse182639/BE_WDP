@@ -71,4 +71,8 @@ export class UserService {
       },
     };
   }
+
+  async findById(userId: string): Promise<UserDocument | null> {
+    return this.userModel.findById(userId);
+  }
 }

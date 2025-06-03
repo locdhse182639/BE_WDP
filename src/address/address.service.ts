@@ -32,4 +32,8 @@ export class AddressService {
       },
     ]);
   }
+
+  async findById(addressId: string): Promise<AddressDocument | null> {
+    return this.addressModel.findById(addressId);
+  }
 }
