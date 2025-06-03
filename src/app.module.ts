@@ -11,6 +11,9 @@ import { SkuModule } from './sku/sku.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import redisStore from 'cache-manager-ioredis';
 import { CartModule } from './cart/cart.module';
+import { FirebaseService } from './firebase/firebase.service';
+import { DeliveryModule } from './delivery/delivery.module';
+import { OrderModule } from './order/order.module';
 
 if (!process.env.MONGO_URI) {
   throw new Error('MONGO_URI not set in environment variables');
@@ -38,6 +41,9 @@ if (!process.env.MONGO_URI) {
     ProductModule,
     SkuModule,
     CartModule,
+    DeliveryModule,
+    OrderModule,
   ],
+  providers: [FirebaseService],
 })
 export class AppModule {}
