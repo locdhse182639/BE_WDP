@@ -16,7 +16,7 @@ export class CartService {
   }
 
   async updateCart(userId: string, items: CartItem[]): Promise<CartItem[]> {
-    await this.cache.set(this.getCartKey(userId), items, 7 * 24 * 60 * 60);
+    await this.cache.set(this.getCartKey(userId), items);
     return items;
   }
 
@@ -46,7 +46,7 @@ export class CartService {
       });
     }
 
-    await this.cache.set(key, cart, 7 * 24 * 60 * 60);
+    await this.cache.set(key, cart);
     return cart;
   }
 
@@ -61,7 +61,7 @@ export class CartService {
       (item) => item.skuId !== dto.skuId || item.productId !== dto.productId,
     );
 
-    await this.cache.set(key, updatedCart, 7 * 24 * 60 * 60);
+    await this.cache.set(key, updatedCart);
     return updatedCart;
   }
 
@@ -79,7 +79,7 @@ export class CartService {
       return item;
     });
 
-    await this.cache.set(key, updatedCart, 7 * 24 * 60 * 60);
+    await this.cache.set(key, updatedCart);
     return updatedCart;
   }
 
@@ -96,7 +96,7 @@ export class CartService {
         : item,
     );
 
-    await this.cache.set(key, updatedCart, 7 * 24 * 60 * 60);
+    await this.cache.set(key, updatedCart);
     return updatedCart;
   }
 }
