@@ -6,21 +6,21 @@ import {
   IsOptional,
   IsBoolean,
   IsEnum,
-  IsMongoId,
   IsDateString,
   ValidateNested,
   Min,
+  IsInstance,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { SkuDimensionsDto } from './sku-dimension.dto';
 import { Types } from 'mongoose';
 
 export class CreateSkuDto {
-  @IsMongoId()
   @Transform(({ value }: { value: string }) =>
     Types.ObjectId.createFromHexString(value),
   )
-  productId: string;
+  @IsInstance(Types.ObjectId)
+  productId: Types.ObjectId;
 
   @IsString()
   @IsNotEmpty()
