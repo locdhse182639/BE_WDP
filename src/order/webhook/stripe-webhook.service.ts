@@ -38,6 +38,7 @@ export class StripeWebhookService {
       );
     } catch (err) {
       this.logger.error('Error constructing Stripe event', err);
+      console.log('Error constructing Stripe event', err);
       throw new Error('Invalid Stripe signature');
     }
 
@@ -52,6 +53,9 @@ export class StripeWebhookService {
       }
 
       this.logger.log(
+        `Processing checkout session completed for user ${userId} and address ${addressId}`,
+      );
+      console.log(
         `Processing checkout session completed for user ${userId} and address ${addressId}`,
       );
 

@@ -15,24 +15,15 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtPayload } from '@/auth/types/jwt-payload';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FilterOrdersDto } from './dto/filter-orders.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  // Customer: Get a single order (only their own)
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  async getOrderById(
-    @Param('id') orderId: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.orderService.getOrderById(orderId, user);
-  }
-
-  // Customer: Get their own orders
   @UseGuards(JwtAuthGuard)
   @Get('me/all')
+  @ApiBearerAuth()
   async getUserOrders(
     @CurrentUser() user: JwtPayload,
     @Query() query: FilterOrdersDto,
@@ -40,9 +31,35 @@ export class OrderController {
     return this.orderService.getUserOrders(user.sub, query);
   }
 
-  // Customer/Admin: Cancel order (only if status = Pending)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
+  @Get('admin')
+  @ApiBearerAuth()
+  async getAllOrders(@Query() query: FilterOrdersDto) {
+    return this.orderService.getAllOrdersAdmin(query);
+  }
+
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
+  @Get('admin/analytics')
+  @ApiBearerAuth()
+  async getAnalytics() {
+    return this.orderService.getOrderAnalytics();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id') // ⬅️ keep last
+  @ApiBearerAuth()
+  async getOrderById(
+    @Param('id') orderId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.orderService.getOrderById(orderId, user);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Put(':id/cancel')
+  @ApiBearerAuth()
   async cancelOrder(
     @Param('id') orderId: string,
     @CurrentUser() user: JwtPayload,
@@ -50,30 +67,14 @@ export class OrderController {
     return this.orderService.cancelOrder(orderId, user);
   }
 
-  // Admin: Get all orders with filters and pagination
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
-  @Get('admin')
-  async getAllOrders(@Query() query: FilterOrdersDto) {
-    return this.orderService.getAllOrdersAdmin(query);
-  }
-
-  // Admin: Update order status
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles('admin')
   @Put(':id/status')
+  @ApiBearerAuth()
   async updateOrderStatus(
     @Param('id') orderId: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
     return this.orderService.updateOrderStatus(orderId, dto);
-  }
-
-  // Admin: Analytics
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
-  @Get('admin/analytics')
-  async getAnalytics() {
-    return this.orderService.getOrderAnalytics();
   }
 }
