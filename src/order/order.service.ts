@@ -35,7 +35,7 @@ export class OrderService {
     }
 
     const address = await this.addressService.findById(addressId);
-    if (!address || !address.userId.equals(new Types.ObjectId(userId))) {
+    if (!address || String(address.userId) !== String(userId)) {
       throw new NotFoundException('Invalid shipping address');
     }
 

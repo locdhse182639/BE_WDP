@@ -55,11 +55,10 @@ export class UserController {
     return this.authService.login(user);
   }
 
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current authenticated user info (admin only)' })
+  @ApiOperation({ summary: 'Get current authenticated user info' })
   @ApiResponse({ status: 200, description: 'User info returned successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   getMe(@CurrentUser() user: JwtPayload) {

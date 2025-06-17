@@ -30,7 +30,7 @@ export class CheckoutService {
     }
 
     const address = await this.addressService.findById(dto.addressId);
-    if (!address || !address.userId?.equals(new Types.ObjectId(userId))) {
+    if (!address || String(address.userId) !== String(userId)) {
       throw new NotFoundException('Address not found');
     }
 
@@ -49,10 +49,8 @@ export class CheckoutService {
 
         const price = item.priceSnapshot ?? sku.price;
         const discount = item.discountSnapshot ?? 0;
-        const finalPrice = Math.max(
-          0,
-          Math.round(price * (1 - discount / 100)),
-        );
+        const discounted = price * (1 - discount / 100);
+        const finalPrice = Math.ceil(Math.max(0, discounted) / 1000) * 1000;
 
         return {
           price_data: {
