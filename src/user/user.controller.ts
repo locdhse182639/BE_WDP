@@ -73,11 +73,12 @@ export class UserController {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
+  @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users with pagination' })
   @ApiResponse({ status: 200, description: 'List of users' })
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
   getAll(@Query() query: PaginationQueryDto) {
     return this.userService.findAll(query);
   }
