@@ -167,7 +167,7 @@ export class DeliveryService {
     const skip = (page - 1) * limit;
 
     const filter: Record<string, any> = {
-      customerId: new Types.ObjectId(customerId),
+      customerId: customerId,
     };
 
     if (status) filter.status = status;

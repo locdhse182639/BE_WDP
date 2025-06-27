@@ -78,7 +78,7 @@ export class OrderService {
     const newOrder = new this.orderModel({
       userId: new Types.ObjectId(userId),
       addressId: new Types.ObjectId(addressId),
-      orderItems,
+      items: orderItems,
       subtotal,
       totalAmount: subtotal,
       paymentMethod: 'Stripe',

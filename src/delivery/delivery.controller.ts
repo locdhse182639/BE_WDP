@@ -44,6 +44,52 @@ export class DeliveryController {
     private readonly firebaseService: FirebaseService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
+  @Get('customer')
+  @ApiOperation({ summary: 'Get all deliveries for the current customer' })
+  @ApiResponse({ status: 200, description: 'Customer deliveries' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
+  getCustomerDeliveries(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: FilterDeliveriesDto,
+  ) {
+    return this.deliveryService.getAllByCustomer(user.sub, query);
+  }
+
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('delivery')
+  @Get('personnel')
+  @ApiOperation({
+    summary: 'Get deliveries assigned to current delivery personnel',
+  })
+  @ApiResponse({ status: 200, description: 'Assigned deliveries' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
+  getAssignedDeliveries(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: FilterDeliveriesDto,
+  ) {
+    return this.deliveryService.getAllAssignedToPersonnel(user.sub, query);
+  }
+
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
+  @Get()
+  @ApiOperation({ summary: 'Admin: Get deliveries with filters & pagination' })
+  @ApiResponse({ status: 200, description: 'Deliveries returned' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
+  getAllForAdmin(@Query() query: FilterDeliveriesDto) {
+    return this.deliveryService.getAllAdminView(query);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles('admin')
@@ -150,51 +196,5 @@ export class DeliveryController {
   @ApiResponse({ status: 200, description: 'Delivery found' })
   getOne(@Param('id') id: string) {
     return this.deliveryService.getById(id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('customer')
-  @ApiOperation({ summary: 'Get all deliveries for the current customer' })
-  @ApiResponse({ status: 200, description: 'Customer deliveries' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
-  getCustomerDeliveries(
-    @CurrentUser() user: JwtPayload,
-    @Query() query: FilterDeliveriesDto,
-  ) {
-    return this.deliveryService.getAllByCustomer(user.sub, query);
-  }
-
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('delivery')
-  @Get('personnel')
-  @ApiOperation({
-    summary: 'Get deliveries assigned to current delivery personnel',
-  })
-  @ApiResponse({ status: 200, description: 'Assigned deliveries' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
-  getAssignedDeliveries(
-    @CurrentUser() user: JwtPayload,
-    @Query() query: FilterDeliveriesDto,
-  ) {
-    return this.deliveryService.getAllAssignedToPersonnel(user.sub, query);
-  }
-
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
-  @Get()
-  @ApiOperation({ summary: 'Admin: Get deliveries with filters & pagination' })
-  @ApiResponse({ status: 200, description: 'Deliveries returned' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({ name: 'status', enum: DeliveryStatus, required: false })
-  getAllForAdmin(@Query() query: FilterDeliveriesDto) {
-    return this.deliveryService.getAllAdminView(query);
   }
 }
