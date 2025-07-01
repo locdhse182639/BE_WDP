@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumberString, IsOptional } from 'class-validator';
+import { IsEnum, IsNumberString, IsOptional, IsString } from 'class-validator';
 
 export enum OrderStatus {
   PENDING = 'Pending',
@@ -10,6 +10,14 @@ export enum OrderStatus {
 }
 
 export class FilterOrdersDto {
+  @ApiPropertyOptional({
+    example: 'user@email.com',
+    description: 'Filter orders by user email (admin only)',
+  })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @IsNumberString()

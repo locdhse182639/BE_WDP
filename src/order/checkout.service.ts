@@ -1,13 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { CartService } from '@/cart/cart.service';
 import { AddressService } from '@/address/address.service';
 import { Sku, SkuDocument } from '@/sku/schemas/sku.schema';
-import { Model, Types } from 'mongoose';
+import { CouponService } from '@/coupon/coupon.service';
+import { Model } from 'mongoose';
 import Stripe from 'stripe';
 import { CheckoutDto } from './dto/checkout.dto';
 import { CartItem } from '@/cart/types/cart-item';
@@ -21,6 +18,7 @@ export class CheckoutService {
     private readonly cartService: CartService,
     private readonly addressService: AddressService,
     @InjectModel(Sku.name) private skuModel: Model<SkuDocument>,
+    private readonly couponService: CouponService,
   ) {}
 
   async checkout(userId: string, dto: CheckoutDto) {
@@ -29,9 +27,16 @@ export class CheckoutService {
       throw new BadRequestException('Cart is empty');
     }
 
-    const address = await this.addressService.findById(dto.addressId);
-    if (!address || String(address.userId) !== String(userId)) {
-      throw new NotFoundException('Address not found');
+    let couponDiscount = 0;
+    if (dto.couponCode) {
+      const coupon = (await this.couponService.validateCouponCode(
+        userId,
+        dto.couponCode,
+      )) as { value: number } | null;
+      if (!coupon || typeof coupon.value !== 'number') {
+        throw new BadRequestException('Invalid or expired coupon code');
+      }
+      couponDiscount = coupon.value;
     }
 
     const lineItems = await Promise.all(
@@ -49,7 +54,9 @@ export class CheckoutService {
 
         const price = item.priceSnapshot ?? sku.price;
         const discount = item.discountSnapshot ?? 0;
-        const discounted = price * (1 - discount / 100);
+        // Apply coupon percent discount to each item
+        const totalDiscount = discount + couponDiscount;
+        const discounted = price * (1 - totalDiscount / 100);
         const finalPrice = Math.ceil(Math.max(0, discounted) / 1000) * 1000;
 
         return {
@@ -66,20 +73,21 @@ export class CheckoutService {
       }),
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    // Create Stripe session
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      line_items: lineItems,
       mode: 'payment',
       success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
-      line_items: lineItems,
       metadata: {
         userId,
         addressId: dto.addressId,
+        ...(dto.couponCode ? { couponCode: dto.couponCode } : {}),
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // Optionally mark coupon as used after successful payment in webhook/order creation
     return { url: session.url };
   }
 }

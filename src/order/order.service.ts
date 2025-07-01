@@ -15,6 +15,7 @@ import { OrderItem } from './schemas/order-item.schema'; // adjust path if neede
 import { JwtPayload } from '@/auth/types/jwt-payload';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FilterOrdersDto, OrderStatus } from './dto/filter-orders.dto';
+import { UserService } from '@/user/user.service';
 
 @Injectable()
 export class OrderService {
@@ -23,11 +24,14 @@ export class OrderService {
     private readonly addressService: AddressService,
     @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
     @InjectModel(Sku.name) private readonly skuModel: Model<SkuDocument>,
+    private readonly userService: UserService,
+    @InjectModel('Coupon') private readonly couponModel: Model<any>,
   ) {}
 
   async createOrderFromSession(
     userId: string,
     addressId: string,
+    couponCode?: string,
   ): Promise<OrderDocument> {
     const cart = (await this.cartService.getCart(userId)) as CartItem[];
     if (!cart || cart.length === 0) {
@@ -75,6 +79,24 @@ export class OrderService {
       });
     }
 
+    let couponId: Types.ObjectId | undefined = undefined;
+    if (couponCode) {
+      // Find and mark coupon as used
+      const coupon:
+        | import('@/coupon/schemas/coupon.schema').CouponDocument
+        | null = await this.couponModel.findOne({
+        code: couponCode,
+        userId,
+        isUsed: false,
+      });
+      if (coupon) {
+        coupon.isUsed = true;
+        coupon.usedAt = new Date();
+        await coupon.save();
+        couponId = coupon._id as import('mongoose').Types.ObjectId;
+      }
+    }
+
     const newOrder = new this.orderModel({
       userId: new Types.ObjectId(userId),
       addressId: new Types.ObjectId(addressId),
@@ -85,6 +107,7 @@ export class OrderService {
       paymentStatus: 'Paid',
       isPaid: true,
       paidAt: new Date(),
+      ...(couponId ? { couponId } : {}),
     });
 
     return newOrder.save();
@@ -154,8 +177,25 @@ export class OrderService {
     const limit = Number(query.limit ?? 10);
     const skip = (page - 1) * limit;
 
-    const filter: Partial<Pick<Order, 'orderStatus'>> = {};
+    const filter: Record<string, any> = {};
     if (query.status) filter.orderStatus = query.status;
+
+    // If email is provided, find user and filter by userId
+    if (query.email) {
+      const user = await this.userService.findByEmail(query.email);
+      if (!user) {
+        return {
+          data: [],
+          meta: {
+            totalItems: 0,
+            totalPages: 0,
+            currentPage: page,
+            limit,
+          },
+        };
+      }
+      filter.userId = user._id;
+    }
 
     const [orders, totalItems] = await Promise.all([
       this.orderModel

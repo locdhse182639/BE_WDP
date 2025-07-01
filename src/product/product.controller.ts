@@ -10,8 +10,11 @@ import {
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/product.dto';
-import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { RoleGuard } from '@/common/guards/role.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 
@@ -21,6 +24,8 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
   create(@Body() dto: CreateProductDto) {
@@ -42,6 +47,8 @@ export class ProductController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Update product' })
   @ApiResponse({ status: 200, description: 'Product updated' })
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
@@ -49,6 +56,8 @@ export class ProductController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Soft delete product' })
   @ApiResponse({ status: 200, description: 'Product soft deleted' })
   softDelete(@Param('id') id: string) {

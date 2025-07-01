@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -47,6 +48,7 @@ export class StripeWebhookService {
 
       const userId = session.metadata?.userId;
       const addressId = session.metadata?.addressId;
+      const couponCode = session.metadata?.couponCode;
 
       if (!userId || !addressId) {
         throw new Error('Missing userId or addressId in session metadata');
@@ -59,7 +61,11 @@ export class StripeWebhookService {
         `Processing checkout session completed for user ${userId} and address ${addressId}`,
       );
 
-      await this.orderService.createOrderFromSession(userId, addressId);
+      await this.orderService.createOrderFromSession(
+        userId,
+        addressId,
+        couponCode,
+      );
       await this.cartService.clearCart(userId);
     }
   }

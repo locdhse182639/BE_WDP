@@ -6,4 +6,11 @@ export class CheckoutDto {
   @IsNotEmpty()
   @IsString()
   addressId: string;
+
+  @ApiProperty({
+    description: 'Coupon code to apply (optional)',
+    required: false,
+  })
+  @IsString()
+  couponCode?: string;
 }

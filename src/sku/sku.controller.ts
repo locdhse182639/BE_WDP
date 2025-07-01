@@ -1,5 +1,6 @@
 // src/sku/sku.controller.ts
 import {
+  UseGuards,
   Controller,
   Post,
   Get,
@@ -16,6 +17,9 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { SkuService } from './sku.service';
 import { FirebaseService } from '@/firebase/firebase.service';
 import { CreateSkuDto } from './dto/create-sku.dto';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { RoleGuard } from '@/common/guards/role.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { UpdateSkuDto } from './dto/update-sku.dto';
 import {
   ApiTags,
@@ -34,6 +38,8 @@ export class SkuController {
    * Replace an image in SKU by index
    */
   @Patch(':id/images/:imageIndex')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @UseInterceptors(FilesInterceptor('file', 1))
   @ApiOperation({ summary: 'Replace an image in SKU by index' })
   @ApiParam({ name: 'id', description: 'SKU ID' })
@@ -78,6 +84,8 @@ export class SkuController {
    * Remove an image from SKU by index
    */
   @Delete(':id/images/:imageIndex')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Remove an image from SKU by index' })
   @ApiParam({ name: 'id', description: 'SKU ID' })
   @ApiParam({
@@ -101,6 +109,8 @@ export class SkuController {
   ) {}
 
   @Post(':id/images')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @UseInterceptors(FilesInterceptor('files', 10))
   @ApiOperation({ summary: 'Upload images for a SKU (replace all images)' })
   @ApiConsumes('multipart/form-data')
@@ -142,6 +152,8 @@ export class SkuController {
    * Add image(s) to SKU (append to images array)
    */
   @Post(':id/images/add')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @UseInterceptors(FilesInterceptor('files', 10))
   @ApiOperation({ summary: 'Add image(s) to SKU (append to images array)' })
   @ApiConsumes('multipart/form-data')
@@ -180,6 +192,8 @@ export class SkuController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Create SKU for a product' })
   @ApiResponse({ status: 201, description: 'SKU created successfully' })
   async create(@Body() dto: CreateSkuDto) {
@@ -210,6 +224,8 @@ export class SkuController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Update SKU by ID' })
   @ApiParam({ name: 'id' })
   async update(@Param('id') id: string, @Body() dto: UpdateSkuDto) {
@@ -217,6 +233,8 @@ export class SkuController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Delete SKU by ID' })
   @ApiParam({ name: 'id' })
   async remove(@Param('id') id: string) {

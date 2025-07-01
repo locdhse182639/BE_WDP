@@ -6,6 +6,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { AuthModule } from '../auth/auth.module'; // ✅ correct import path
 import { AddressModule } from '@/address/address.module';
 import { EmailModule } from '@/email/email.module';
+import { CouponModule } from '@/coupon/coupon.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { EmailModule } from '@/email/email.module';
     forwardRef(() => AuthModule),
     AddressModule,
     EmailModule,
+    CouponModule,
   ],
   controllers: [UserController],
   providers: [UserService],

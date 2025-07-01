@@ -16,6 +16,7 @@ import { JwtPayload } from '@/auth/types/jwt-payload';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FilterOrdersDto } from './dto/filter-orders.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('order')
 export class OrderController {
@@ -35,6 +36,17 @@ export class OrderController {
   @Roles('admin')
   @Get('admin')
   @ApiBearerAuth()
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+    description: 'Filter by order status',
+  })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    description: 'Filter by user email (admin only)',
+  })
   async getAllOrders(@Query() query: FilterOrdersDto) {
     return this.orderService.getAllOrdersAdmin(query);
   }
