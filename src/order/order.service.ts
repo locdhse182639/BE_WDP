@@ -43,7 +43,7 @@ export class OrderService {
     let subtotal = 0;
 
     for (const item of cart) {
-      const sku = await this.skuModel.findById(item.skuId);
+      const sku = (await this.skuModel.findById(item.skuId)) as SkuDocument;
       if (!sku) {
         throw new BadRequestException(`SKU not found: ${item.skuId}`);
       }
@@ -70,7 +70,7 @@ export class OrderService {
         priceSnapshot: price,
         discountSnapshot: discount,
         stockSnapshot: sku.stock,
-        image: item.image ?? sku.image,
+        image: item.image ?? sku.images?.[0],
         skuName: item.skuName ?? sku.variantName,
       });
     }
