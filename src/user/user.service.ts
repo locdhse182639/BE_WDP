@@ -1,3 +1,6 @@
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { randomBytes } from 'crypto';
+import { EmailService } from '@/email/email.service';
 import {
   ConflictException,
   Injectable,
@@ -12,7 +15,10 @@ import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly emailService: EmailService,
+  ) {}
 
   async register(dto: CreateUserDto): Promise<User> {
     const existing = await this.userModel.findOne({ email: dto.email });
@@ -74,5 +80,45 @@ export class UserService {
 
   async findById(userId: string): Promise<UserDocument | null> {
     return this.userModel.findById(userId);
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (dto.name !== undefined) user.name = dto.name;
+    if (dto.phone !== undefined) user.phone = dto.phone;
+    if (dto.skinType !== undefined) user.skinType = dto.skinType;
+    await user.save();
+    return user;
+  }
+
+  async sendVerificationEmail(userId: string): Promise<{ message: string }> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Generate a token
+    const token = randomBytes(32).toString('hex');
+    user.emailVerificationToken = token;
+    await user.save();
+    await this.emailService.sendVerificationEmail(user.email, token);
+    return { message: 'Verification email sent' };
+  }
+
+  async verifyEmail(
+    userId: string,
+    token: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findById(userId);
+    if (!user || !user.emailVerificationToken)
+      throw new NotFoundException('Invalid or expired verification token');
+    if (user.emailVerificationToken !== token)
+      throw new NotFoundException('Invalid or expired verification token');
+    user.isVerified = true;
+    user.emailVerifiedAt = new Date();
+    user.emailVerificationToken = undefined;
+    await user.save();
+    return { message: 'Email verified successfully' };
   }
 }

@@ -12,6 +12,48 @@ export class SkuService {
     @InjectModel(Sku.name) private readonly skuModel: Model<SkuDocument>,
   ) {}
 
+  async addImages(id: string, urls: string[]): Promise<Sku> {
+    const sku = await this.findById(id);
+    if (!sku) throw new NotFoundException('SKU not found');
+    const updatedImages = Array.isArray(sku.images)
+      ? [...sku.images, ...urls]
+      : urls;
+    return this.update(id, { images: updatedImages });
+  }
+
+  async removeImage(id: string, imageIndex: number): Promise<Sku> {
+    const sku = await this.findById(id);
+    if (!sku || !Array.isArray(sku.images)) {
+      throw new NotFoundException('SKU or images not found');
+    }
+    if (imageIndex < 0 || imageIndex >= sku.images.length) {
+      throw new NotFoundException('Invalid image index');
+    }
+    const updatedImages = [...sku.images];
+    updatedImages.splice(imageIndex, 1);
+    return this.update(id, { images: updatedImages });
+  }
+
+  /**
+   * Replace an image in the SKU's images array by index
+   */
+  async replaceImage(
+    id: string,
+    imageIndex: number,
+    url: string,
+  ): Promise<Sku> {
+    const sku = await this.findById(id);
+    if (!sku || !Array.isArray(sku.images)) {
+      throw new NotFoundException('SKU or images not found');
+    }
+    if (imageIndex < 0 || imageIndex >= sku.images.length) {
+      throw new NotFoundException('Invalid image index');
+    }
+    const updatedImages = [...sku.images];
+    updatedImages[imageIndex] = url;
+    return this.update(id, { images: updatedImages });
+  }
+
   async create(dto: CreateSkuDto) {
     return this.skuModel.create(dto);
   }

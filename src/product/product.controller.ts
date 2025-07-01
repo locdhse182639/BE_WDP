@@ -13,6 +13,7 @@ import { CreateProductDto } from './dto/product.dto';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductQueryDto } from './dto/product-query.dto';
 
 @ApiTags('Product')
 @Controller('product')
@@ -27,9 +28,9 @@ export class ProductController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get paginated products' })
+  @ApiOperation({ summary: 'Get paginated products with filters' })
   @ApiResponse({ status: 200, description: 'List of products' })
-  findAll(@Query() query: PaginationQueryDto) {
+  findAll(@Query() query: ProductQueryDto) {
     return this.productService.findAll(query);
   }
 
