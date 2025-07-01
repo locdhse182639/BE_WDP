@@ -50,8 +50,8 @@ export class Sku {
   @Prop({ default: 0 })
   discount: number;
 
-  @Prop()
-  image?: string;
+  @Prop({ type: [String], default: [] })
+  images: string[];
 
   @Prop()
   weight?: number; // in grams

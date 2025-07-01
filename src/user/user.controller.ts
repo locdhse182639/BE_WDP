@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Query,
   UnauthorizedException,
   UseGuards,
@@ -25,6 +26,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -56,13 +58,40 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('me')
+  @Get('profile')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current authenticated user info' })
-  @ApiResponse({ status: 200, description: 'User info returned successfully' })
+  @ApiOperation({ summary: 'Get full user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Full user profile returned successfully',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  getMe(@CurrentUser() user: JwtPayload) {
-    return user;
+  async getProfile(@CurrentUser() user: JwtPayload) {
+    return this.userService.findById(user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  async updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.userService.updateProfile(user.sub, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-email')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send email verification link' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  async sendVerificationEmail(@CurrentUser() user: JwtPayload) {
+    // This will call the email service to send a verification email
+    return this.userService.sendVerificationEmail(user.sub);
   }
 
   @Post('refresh')
@@ -81,5 +110,17 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'List of users' })
   getAll(@Query() query: PaginationQueryDto) {
     return this.userService.findAll(query);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('verify-email/confirm')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify user email with token' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  async verifyEmail(
+    @CurrentUser() user: JwtPayload,
+    @Query('token') token: string,
+  ) {
+    return this.userService.verifyEmail(user.sub, token);
   }
 }

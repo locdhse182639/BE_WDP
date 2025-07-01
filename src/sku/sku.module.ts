@@ -4,9 +4,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Sku, SkuSchema } from './schemas/sku.schema';
 import { SkuService } from './sku.service';
 import { SkuController } from './sku.controller';
+import { FirebaseModule } from '@/firebase/firebase.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Sku.name, schema: SkuSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Sku.name, schema: SkuSchema }]),
+    FirebaseModule,
+  ],
   providers: [SkuService],
   controllers: [SkuController],
   exports: [SkuService],

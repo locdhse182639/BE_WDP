@@ -74,9 +74,10 @@ export class CreateSkuDto {
   @IsOptional()
   discount?: number;
 
-  @IsString()
+
   @IsOptional()
-  image?: string;
+  @IsString({ each: true })
+  images?: string[];
 
   @IsNumber()
   @IsOptional()
