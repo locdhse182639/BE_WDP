@@ -27,6 +27,11 @@ export class CreateProductDto {
   @IsOptional()
   skinConcerns?: string[];
 
+  @ApiProperty({ example: ['normal', 'dry', 'sensitive'] })
+  @IsArray()
+  @IsOptional()
+  suitableForSkinTypes?: string[];
+
   @ApiProperty({ example: ['https://cdn.com/img1.jpg'] })
   @IsArray()
   @IsOptional()

@@ -13,7 +13,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '@/user/schemas/user.schema';
 import { Coupon, CouponDocument } from './schemas/coupon.schema';
-import { Types } from 'mongoose';
 import { AdminUpdateCouponDto } from './dto/admin-update-coupon.dto';
 import { AdminSearchCouponDto } from './dto/admin-search-coupon.dto';
 
