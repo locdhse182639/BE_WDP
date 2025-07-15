@@ -41,6 +41,11 @@ export class Sku {
   @Prop({ default: 0 })
   returnCount: number;
 
+  // Track returned items available for sale
+  @Prop({ default: 0 })
+  returnedStock: number;
+
+
   @Prop({
     default: 'active',
     enum: ['active', 'near_expiry', 'returned', 'hidden', 'discontinued'],

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Skin Relief Moisturizer' })
@@ -31,6 +38,12 @@ export class CreateProductDto {
   @IsArray()
   @IsOptional()
   suitableForSkinTypes?: string[];
+
+  @ApiProperty({ example: ['true', 'false'] })
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isActive?: boolean;
 
   @ApiProperty({ example: ['https://cdn.com/img1.jpg'] })
   @IsArray()
