@@ -146,7 +146,7 @@ export class DeliveryController {
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'delivery')
   @ApiOperation({ summary: 'Update delivery status' })
   @ApiResponse({ status: 200, description: 'Delivery status updated' })
   @ApiBody({
@@ -196,5 +196,63 @@ export class DeliveryController {
   @ApiResponse({ status: 200, description: 'Delivery found' })
   getOne(@Param('id') id: string) {
     return this.deliveryService.getById(id);
+  }
+
+  @Get('admin/delivery-personnel')
+  @UseGuards(RoleGuard)
+  @Roles('admin')
+  @ApiOperation({
+    summary: 'Admin: Get all users with delivery role',
+    description:
+      'Returns all users with the delivery role. Supports separate regex filters for email, name, and phone. Pagination is available.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    type: String,
+    description: 'Regex filter for email',
+  })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    type: String,
+    description: 'Regex filter for full name',
+  })
+  @ApiQuery({
+    name: 'phone',
+    required: false,
+    type: String,
+    description: 'Regex filter for phone',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of delivery personnel with pagination',
+  })
+  async getAllDeliveryPersonnelAdmin(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('email') email?: string,
+    @Query('name') name?: string,
+    @Query('phone') phone?: string,
+  ) {
+    return this.deliveryService.getAllDeliveryPersonnelAdmin({
+      page,
+      limit,
+      email,
+      name,
+      phone,
+    });
   }
 }

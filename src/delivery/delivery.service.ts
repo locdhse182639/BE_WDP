@@ -19,11 +19,6 @@ import { OrderService } from '@/order/order.service';
 
 const allowedTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
   [DeliveryStatus.PENDING]: [
-    DeliveryStatus.PROCESSING,
-    DeliveryStatus.CANCELLED,
-    DeliveryStatus.FAILED,
-  ],
-  [DeliveryStatus.PROCESSING]: [
     DeliveryStatus.ASSIGNED,
     DeliveryStatus.CANCELLED,
     DeliveryStatus.FAILED,
@@ -289,5 +284,31 @@ export class DeliveryService {
         limit,
       },
     };
+  }
+
+  /**
+   * Admin: Get all users with delivery role, with separate regex filters and pagination
+   */
+  async getAllDeliveryPersonnelAdmin({
+    page = 1,
+    limit = 10,
+    email,
+    name,
+    phone,
+  }: {
+    page?: number;
+    limit?: number;
+    email?: string;
+    name?: string;
+    phone?: string;
+  }) {
+    // Use public method from UserService
+    return this.userService.findDeliveryPersonnel({
+      page,
+      limit,
+      email,
+      name,
+      phone,
+    });
   }
 }

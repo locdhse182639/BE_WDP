@@ -10,6 +10,8 @@ import { AddressService } from './address.service';
 import { JwtPayload } from '@/auth/types/jwt-payload';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { RoleGuard } from '@/common/guards/role.guard';
 
 @ApiTags('Address')
 @ApiBearerAuth()
@@ -42,5 +44,14 @@ export class AddressController {
   @ApiResponse({ status: 200, description: 'Default address set' })
   setDefault(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.addressService.setDefault(user.sub, id);
+  }
+
+  @Get('admin/all')
+  @UseGuards(RoleGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get all addresses (admin only)' })
+  @ApiResponse({ status: 200, description: 'List of all addresses' })
+  async getAllAddresses() {
+    return this.addressService.findAll();
   }
 }

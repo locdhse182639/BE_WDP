@@ -121,4 +121,46 @@ export class UserService {
     await user.save();
     return { message: 'Email verified successfully' };
   }
+
+  /**
+   * Find all users with delivery role, with separate regex filters and pagination
+   */
+  async findDeliveryPersonnel({
+    page = 1,
+    limit = 10,
+    email,
+    name,
+    phone,
+  }: {
+    page?: number;
+    limit?: number;
+    email?: string;
+    name?: string;
+    phone?: string;
+  }) {
+    const skip = (page - 1) * limit;
+    const filter: Record<string, any> = { role: 'delivery' };
+    if (email) {
+      filter.email = { $regex: new RegExp(email, 'i') };
+    }
+    if (name) {
+      filter.fullName = { $regex: new RegExp(name, 'i') };
+    }
+    if (phone) {
+      filter.phone = { $regex: new RegExp(phone, 'i') };
+    }
+    const [data, totalItems] = await Promise.all([
+      this.userModel.find(filter).skip(skip).limit(limit),
+      this.userModel.countDocuments(filter),
+    ]);
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+        limit,
+      },
+    };
+  }
 }

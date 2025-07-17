@@ -36,4 +36,11 @@ export class AddressService {
   async findById(addressId: string): Promise<AddressDocument | null> {
     return this.addressModel.findById(addressId);
   }
+
+  /**
+   * Get all addresses (admin only)
+   */
+  findAll(): Promise<AddressDocument[]> {
+    return this.addressModel.find().sort({ createdAt: -1 }).exec();
+  }
 }
