@@ -199,7 +199,7 @@ export class DeliveryController {
   }
 
   @Get('admin/delivery-personnel')
-  @UseGuards(RoleGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles('admin')
   @ApiOperation({
     summary: 'Admin: Get all users with delivery role',
