@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CheckoutDto {
@@ -11,6 +11,7 @@ export class CheckoutDto {
     description: 'Coupon code to apply (optional)',
     required: false,
   })
+  @IsOptional()
   @IsString()
   couponCode?: string;
 }
