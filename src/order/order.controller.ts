@@ -60,7 +60,7 @@ export class OrderController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id') // ⬅️ keep last
+  @Get(':id')
   @ApiBearerAuth()
   async getOrderById(
     @Param('id') orderId: string,

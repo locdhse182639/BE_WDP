@@ -45,6 +45,9 @@ export class Sku {
   @Prop({ default: 0 })
   returnedStock: number;
 
+  // Flag to indicate if SKU is currently a returned item
+  @Prop({ default: false })
+  isReturned: boolean;
 
   @Prop({
     default: 'active',

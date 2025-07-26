@@ -61,10 +61,15 @@ export class StripeWebhookService {
         `Processing checkout session completed for user ${userId} and address ${addressId}`,
       );
 
+      const paymentIntentId = session.payment_intent as string | undefined;
+      // Use Stripe session amount_total for final charge after discounts
+      const amountTotal = session.amount_total ?? 0;
       await this.orderService.createOrderFromSession(
         userId,
         addressId,
         couponCode,
+        paymentIntentId,
+        amountTotal,
       );
       await this.cartService.clearCart(userId);
     }

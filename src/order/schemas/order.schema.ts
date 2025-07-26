@@ -56,6 +56,9 @@ export class Order {
 
   @Prop({ type: Types.ObjectId, ref: 'Coupon' })
   couponId?: Types.ObjectId;
+
+  @Prop({ required: false })
+  paymentIntentId?: string;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

@@ -12,6 +12,11 @@ export class SkuService {
     @InjectModel(Sku.name) private readonly skuModel: Model<SkuDocument>,
   ) {}
 
+  // Expose skuModel for transactional operations
+  getSkuModel() {
+    return this.skuModel;
+  }
+
   async addImages(id: string, urls: string[]): Promise<Sku> {
     const sku = await this.findById(id);
     if (!sku) throw new NotFoundException('SKU not found');

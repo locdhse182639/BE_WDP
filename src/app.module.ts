@@ -16,6 +16,8 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { OrderModule } from './order/order.module';
 import { CouponModule } from './coupon/coupon.module';
 import { ReviewModule } from './review/review.module';
+import { ReturnModule } from './return/return.module';
+import { RefundModule } from './refund/refund.module';
 
 if (!process.env.MONGO_URI) {
   throw new Error('MONGO_URI not set in environment variables');
@@ -47,6 +49,8 @@ if (!process.env.MONGO_URI) {
     OrderModule,
     CouponModule,
     ReviewModule,
+    ReturnModule,
+    RefundModule,
   ],
   providers: [FirebaseService],
 })

@@ -22,6 +22,8 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { AdminRejectReturnDto } from './dto/admin-reject-return.dto';
 
 @ApiTags('Return')
 @ApiBearerAuth()
@@ -31,7 +33,11 @@ export class ReturnController {
   constructor(private readonly returnService: ReturnService) {}
 
   @Post('request')
-  @ApiOperation({ summary: 'Submit a return request with images' })
+  @ApiOperation({
+    summary: 'Submit a return request with images',
+    description:
+      'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -40,13 +46,19 @@ export class ReturnController {
           type: 'string',
           format: 'mongoid',
           example: '683d54bbf9076e4042ec1c2e',
+          description: 'Order ID (must be delivered)',
         },
         skuId: {
           type: 'string',
           format: 'mongoid',
           example: '683d56708569c8587916411a',
+          description: 'SKU ID for the returned product',
         },
-        reason: { type: 'string', example: 'Product damaged during shipping' },
+        reason: {
+          type: 'string',
+          example: 'Product damaged during shipping',
+          description: 'Reason for return',
+        },
         images: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
@@ -54,66 +66,12 @@ export class ReturnController {
         },
       },
       required: ['orderId', 'skuId', 'reason'],
+      description:
+        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
     },
   })
   @ApiResponse({ status: 201, description: 'Return request submitted' })
   @UseInterceptors(FilesInterceptor('images'))
-  @ApiBearerAuth()
-  @ApiTags('Return')
-  @ApiOperation({ summary: 'Submit a return request with images' })
-  @ApiResponse({ status: 201, description: 'Return request submitted' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        orderId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d54bbf9076e4042ec1c2e',
-        },
-        skuId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d56708569c8587916411a',
-        },
-        reason: { type: 'string', example: 'Product damaged during shipping' },
-        images: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-          description: 'Upload images as files',
-        },
-      },
-      required: ['orderId', 'skuId', 'reason'],
-    },
-  })
-  @ApiResponse({ status: 201, description: 'Return request submitted' })
-  @ApiOperation({ summary: 'Submit a return request with images' })
-  @ApiResponse({ status: 201, description: 'Return request submitted' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        orderId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d54bbf9076e4042ec1c2e',
-        },
-        skuId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d56708569c8587916411a',
-        },
-        reason: { type: 'string', example: 'Product damaged during shipping' },
-        images: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-          description: 'Upload images as files',
-        },
-      },
-      required: ['orderId', 'skuId', 'reason'],
-    },
-  })
-  @ApiResponse({ status: 201, description: 'Return request submitted' })
   async createReturnRequest(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateReturnRequestDto,
@@ -124,61 +82,95 @@ export class ReturnController {
 
   @Patch('approve/:id')
   @ApiOperation({ summary: 'Admin: Approve a return request' })
-  @ApiParam({ name: 'id', description: 'Return request ID' })
+  @ApiOperation({
+    summary: 'Submit a return request with images',
+    description:
+      'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
+  })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        adminNotes: { type: 'string', example: 'Approved after inspection' },
+        orderId: {
+          type: 'string',
+          format: 'mongoid',
+          example: '683d54bbf9076e4042ec1c2e',
+          description: 'Order ID (must be delivered)',
+        },
+        skuId: {
+          type: 'string',
+          format: 'mongoid',
+          example: '683d56708569c8587916411a',
+          description: 'SKU ID for the returned product',
+        },
+        reason: {
+          type: 'string',
+          example: 'Product damaged during shipping',
+          description: 'Reason for return',
+        },
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Upload images as files',
+        },
       },
+      required: ['orderId', 'skuId', 'reason'],
+      description:
+        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
     },
   })
-  @ApiResponse({ status: 200, description: 'Return request approved' })
+  @ApiResponse({ status: 201, description: 'Return request submitted' })
+  @UseInterceptors(FilesInterceptor('images'))
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        orderId: {
+          type: 'string',
+          format: 'mongoid',
+          example: '683d54bbf9076e4042ec1c2e',
+        },
+        skuId: {
+          type: 'string',
+          format: 'mongoid',
+          example: '683d56708569c8587916411a',
+        },
+        reason: { type: 'string', example: 'Product damaged during shipping' },
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Upload images as files',
+        },
+      },
+      required: ['orderId', 'skuId', 'reason'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Return request submitted' })
   async approveReturnRequest(
-    @Param('id') requestId: string,
-    @Body('adminNotes') adminNotes?: string,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.returnService.approveReturnRequest(requestId, adminNotes);
+    return this.returnService.approveReturnRequest(id, user.sub);
   }
 
   @Patch('reject/:id')
-  @ApiOperation({ summary: 'Admin: Reject a return request' })
-  @ApiParam({ name: 'id', description: 'Return request ID' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        adminNotes: { type: 'string', example: 'Rejected due to damage' },
-      },
-    },
+  @Roles('admin')
+  @ApiOperation({
+    summary: 'Admin: Reject a return request',
+    description:
+      'Reject a return request with a specific reason and optional notes.',
   })
+  @ApiParam({ name: 'id', required: true })
+  @ApiBody({ type: AdminRejectReturnDto })
   @ApiResponse({ status: 200, description: 'Return request rejected' })
   async rejectReturnRequest(
-    @Param('id') requestId: string,
-    @Body('adminNotes') adminNotes?: string,
+    @Param('id') id: string,
+    @Body() dto: AdminRejectReturnDto,
   ) {
-    return this.returnService.rejectReturnRequest(requestId, adminNotes);
-  }
-
-  @Patch('complete/:id')
-  @ApiOperation({ summary: 'Admin: Complete a return request' })
-  @ApiParam({ name: 'id', description: 'Return request ID' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        adminNotes: {
-          type: 'string',
-          example: 'Return processed and stock updated',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 200, description: 'Return request completed' })
-  async completeReturnRequest(
-    @Param('id') requestId: string,
-    @Body('adminNotes') adminNotes?: string,
-  ) {
-    return this.returnService.completeReturnRequest(requestId, adminNotes);
+    return this.returnService.rejectReturnRequest(
+      id,
+      dto.reason,
+      dto.adminNotes,
+    );
   }
 }

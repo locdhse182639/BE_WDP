@@ -8,6 +8,88 @@ import { ProductQueryDto } from './dto/product-query.dto';
 
 @Injectable()
 export class ProductService {
+  async findReturnedSkus(query: ProductQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      name,
+      brand,
+      ingredients,
+      skinConcerns,
+      suitableForSkinTypes,
+      minPrice,
+      maxPrice,
+    } = query;
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+    if (name) filter.name = { $regex: name, $options: 'i' };
+    if (brand) filter.brand = { $regex: brand, $options: 'i' };
+    if (ingredients)
+      filter.ingredients = {
+        $in: Array.isArray(ingredients) ? ingredients : ingredients.split(','),
+      };
+    if (skinConcerns)
+      filter.skinConcerns = {
+        $in: Array.isArray(skinConcerns)
+          ? skinConcerns
+          : skinConcerns.split(','),
+      };
+    if (suitableForSkinTypes)
+      filter.suitableForSkinTypes = {
+        $in: Array.isArray(suitableForSkinTypes)
+          ? suitableForSkinTypes
+          : suitableForSkinTypes.split(','),
+      };
+
+    // SKU filter logic for returned SKUs only
+    let productIdsBySku: Types.ObjectId[] | undefined = undefined;
+    interface MongoSkuFilter {
+      returnedStock?: { $gt: number };
+      price?: { $gte?: number; $lte?: number };
+    }
+    const mongoSkuFilter: MongoSkuFilter = { returnedStock: { $gt: 0 } };
+    if (minPrice !== undefined)
+      mongoSkuFilter.price = { $gte: Number(minPrice) };
+    if (maxPrice !== undefined) {
+      mongoSkuFilter.price = {
+        ...(mongoSkuFilter.price || {}),
+        $lte: Number(maxPrice),
+      };
+    }
+    const SkuModel = this.productModel.db.model('Sku');
+    const skus = await SkuModel.find(mongoSkuFilter, 'productId');
+    productIdsBySku = skus.map(
+      (sku: { productId: Types.ObjectId }) => sku.productId,
+    );
+    filter._id = { $in: productIdsBySku };
+
+    const [data, totalItems] = await Promise.all([
+      this.productModel
+        .find(filter)
+        .skip(skip)
+        .limit(limit)
+        .populate({
+          path: 'skus',
+          match: {
+            returnedStock: { $gt: 0 },
+            ...(mongoSkuFilter.price ? { price: mongoSkuFilter.price } : {}),
+          },
+        })
+        .lean(),
+      this.productModel.countDocuments(filter),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+        limit,
+      },
+    };
+  }
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
   ) {}

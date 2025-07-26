@@ -39,39 +39,69 @@ export class CheckoutService {
       couponDiscount = coupon.value;
     }
 
-    const lineItems = await Promise.all(
-      cart.map(async (item) => {
-        const sku = await this.skuModel.findById(item.skuId);
-        if (!sku) {
-          throw new BadRequestException(`SKU not found: ${item.skuId}`);
-        }
+    const lineItems: any[] = [];
+    for (const item of cart) {
+      const sku = await this.skuModel.findById(item.skuId);
+      if (!sku) {
+        throw new BadRequestException(`SKU not found: ${item.skuId}`);
+      }
 
-        if (sku.stock - sku.reservedStock < item.quantity) {
-          throw new BadRequestException(
-            `Not enough stock for ${sku.variantName}`,
-          );
-        }
+      if (sku.stock - sku.reservedStock < item.quantity) {
+        throw new BadRequestException(
+          `Not enough stock for ${sku.variantName}`,
+        );
+      }
 
-        const price = item.priceSnapshot ?? sku.price;
-        const discount = item.discountSnapshot ?? 0;
-        // Apply coupon percent discount to each item
-        const totalDiscount = discount + couponDiscount;
-        const discounted = price * (1 - totalDiscount / 100);
-        const finalPrice = Math.ceil(Math.max(0, discounted) / 1000) * 1000;
+      const price = item.priceSnapshot ?? sku.price;
+      const usedReturned = Math.min(item.quantity, sku.returnedStock ?? 0);
+      const normalQty = item.quantity - usedReturned;
 
-        return {
+      // Audit log for returned portion
+      if (usedReturned > 0) {
+        const returnedPrice = Math.round(
+          price * 0.8 * (1 - couponDiscount / 100),
+        );
+        const stripeReturnedPrice =
+          Math.ceil(Math.max(0, returnedPrice) / 1000) * 1000;
+        lineItems.push({
+          price_data: {
+            currency: 'vnd',
+            product_data: {
+              name: item.skuName + ' (Returned)',
+              images: item.image ? [item.image] : [],
+            },
+            unit_amount: stripeReturnedPrice,
+          },
+          quantity: usedReturned,
+        });
+        // Audit log
+        console.log(
+          `[AUDIT] CartItem Returned: SKU ${item.skuId}, Qty ${usedReturned}, Price ${stripeReturnedPrice}`,
+        );
+      }
+
+      // Audit log for normal portion
+      if (normalQty > 0) {
+        const normalPrice = Math.round(price * (1 - couponDiscount / 100));
+        const stripeNormalPrice =
+          Math.ceil(Math.max(0, normalPrice) / 1000) * 1000;
+        lineItems.push({
           price_data: {
             currency: 'vnd',
             product_data: {
               name: item.skuName,
               images: item.image ? [item.image] : [],
             },
-            unit_amount: finalPrice,
+            unit_amount: stripeNormalPrice,
           },
-          quantity: item.quantity,
-        };
-      }),
-    );
+          quantity: normalQty,
+        });
+        // Audit log
+        console.log(
+          `[AUDIT] CartItem Normal: SKU ${item.skuId}, Qty ${normalQty}, Price ${stripeNormalPrice}`,
+        );
+      }
+    }
 
     // Create Stripe session
     const session = await this.stripe.checkout.sessions.create({

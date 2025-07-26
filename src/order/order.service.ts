@@ -32,6 +32,8 @@ export class OrderService {
     userId: string,
     addressId: string,
     couponCode?: string,
+    paymentIntentId?: string,
+    amountTotal?: number,
   ): Promise<OrderDocument> {
     const cart = (await this.cartService.getCart(userId)) as CartItem[];
     if (!cart || cart.length === 0) {
@@ -63,20 +65,66 @@ export class OrderService {
 
       const price = item.priceSnapshot ?? sku.price;
       const discount = item.discountSnapshot ?? 0;
-      const finalPrice = Math.round(price * (1 - discount / 100));
+      const usedReturned = Math.min(item.quantity, sku.returnedStock ?? 0);
+      const normalQty = item.quantity - usedReturned;
 
-      subtotal += finalPrice * item.quantity;
+      // Returned portion
+      if (usedReturned > 0) {
+        const returnedFinalPrice = Math.round(
+          price * 0.8 * (1 - discount / 100),
+        );
+        subtotal += returnedFinalPrice * usedReturned;
+        orderItems.push({
+          skuId: sku._id as Types.ObjectId,
+          productId: new Types.ObjectId(item.productId),
+          quantity: usedReturned,
+          priceSnapshot: price,
+          discountSnapshot: 100 - Math.round(80 * (1 - discount / 100)),
+          stockSnapshot: sku.stock,
+          image: item.image ?? sku.images?.[0],
+          skuName: (item.skuName ?? sku.variantName) + ' (Returned)',
+        });
+        // Audit log
+        console.log(
+          `[AUDIT] OrderItem Returned: SKU ${item.skuId}, Qty ${usedReturned}, Price ${returnedFinalPrice}`,
+        );
+      }
 
-      orderItems.push({
-        skuId: sku._id as Types.ObjectId,
-        productId: new Types.ObjectId(item.productId),
-        quantity: item.quantity,
-        priceSnapshot: price,
-        discountSnapshot: discount,
-        stockSnapshot: sku.stock,
-        image: item.image ?? sku.images?.[0],
-        skuName: item.skuName ?? sku.variantName,
-      });
+      // Normal portion
+      if (normalQty > 0) {
+        const normalFinalPrice = Math.round(price * (1 - discount / 100));
+        subtotal += normalFinalPrice * normalQty;
+        orderItems.push({
+          skuId: sku._id as Types.ObjectId,
+          productId: new Types.ObjectId(item.productId),
+          quantity: normalQty,
+          priceSnapshot: price,
+          discountSnapshot: discount,
+          stockSnapshot: sku.stock,
+          image: item.image ?? sku.images?.[0],
+          skuName: item.skuName ?? sku.variantName,
+        });
+        // Audit log
+        console.log(
+          `[AUDIT] OrderItem Normal: SKU ${item.skuId}, Qty ${normalQty}, Price ${normalFinalPrice}`,
+        );
+      }
+
+      // Handle returnedStock and isReturned
+      if (usedReturned > 0) {
+        sku.returnedStock -= usedReturned;
+        if (sku.returnedStock <= 0) {
+          sku.isReturned = false;
+          sku.returnedStock = 0;
+        }
+      }
+      if (normalQty > 0) {
+        sku.stock -= normalQty;
+      }
+      // Always decrement reservedStock after order is finalized
+      sku.reservedStock -= item.quantity;
+      if (sku.reservedStock < 0) sku.reservedStock = 0;
+      await sku.save();
     }
 
     let couponId: Types.ObjectId | undefined = undefined;
@@ -102,12 +150,13 @@ export class OrderService {
       addressId: new Types.ObjectId(addressId),
       items: orderItems,
       subtotal,
-      totalAmount: subtotal,
+      totalAmount: amountTotal ?? subtotal,
       paymentMethod: 'Stripe',
       paymentStatus: 'Paid',
       isPaid: true,
       paidAt: new Date(),
       ...(couponId ? { couponId } : {}),
+      ...(paymentIntentId ? { paymentIntentId } : {}),
     });
 
     return newOrder.save();
