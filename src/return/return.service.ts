@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-// import axios from 'axios'; // Unused import removed
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -36,11 +35,7 @@ export class ReturnService {
     private readonly emailService: EmailService,
   ) {}
 
-  async createReturnRequest(
-    userId: string,
-    dto: CreateReturnRequestDto,
-    // files?: Express.Multer.File[], // Unused parameter removed
-  ) {
+  async createReturnRequest(userId: string, dto: CreateReturnRequestDto) {
     // Check order status
     const order = await this.orderService.findById(dto.orderId);
     if (!order) {
@@ -71,7 +66,7 @@ export class ReturnService {
     return request.save();
   }
 
-  async approveReturnRequest(requestId: string, adminNotes?: string) {
+  async approveReturnRequest(requestId: string) {
     const session = await this.returnRequestModel.db.startSession();
     session.startTransaction();
     try {
@@ -85,7 +80,6 @@ export class ReturnService {
         throw new Error('Return request is not pending');
       }
       request.status = 'approved';
-      if (adminNotes) request.adminNotes = adminNotes;
       await request.save({ session });
 
       // Get order details
@@ -199,5 +193,52 @@ export class ReturnService {
     if (adminNotes) request.adminNotes = adminNotes;
     await request.save();
     return request;
+  }
+
+  /**
+   * Admin: Get all return requests with pagination and filter by user email
+   */
+  async getAllReturnRequestsAdmin(
+    page?: number,
+    limit?: number,
+    email?: string,
+  ) {
+    const pageNum = Number(page) > 0 ? Number(page) : 1;
+    const limitNum = Number(limit) > 0 ? Number(limit) : 10;
+    const filter: Record<string, any> = {};
+    if (email) {
+      const users = await this.userService.findByEmailPartial(email);
+      const userIds = users.map((u) => u._id);
+      if (userIds.length > 0) {
+        filter.userId = { $in: userIds };
+      } else {
+        return {
+          rawData: [],
+          meta: {
+            totalItems: 0,
+            totalPages: 0,
+            currentPage: pageNum,
+            limit: limitNum,
+          },
+        };
+      }
+    }
+    const totalItems = await this.returnRequestModel.countDocuments(filter);
+    const data = await this.returnRequestModel
+      .find(filter)
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .populate({ path: 'userId', select: 'email' })
+      .lean();
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limitNum),
+        currentPage: pageNum,
+        limit: limitNum,
+      },
+    };
   }
 }

@@ -7,7 +7,10 @@ import {
   UseInterceptors,
   Param,
   Patch,
+  Query,
+  Get,
 } from '@nestjs/common';
+
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -15,15 +18,16 @@ import { JwtPayload } from '@/auth/types/jwt-payload';
 import { CreateReturnRequestDto } from './dto/create-return-request.dto';
 import { ReturnService } from './return.service';
 import { FirebaseService } from '@/firebase/firebase.service';
+import { Roles } from '@/common/decorators/roles.decorator';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiBody,
-  ApiParam,
 } from '@nestjs/swagger';
-import { Roles } from '@/common/decorators/roles.decorator';
 import { AdminRejectReturnDto } from './dto/admin-reject-return.dto';
 
 @ApiTags('Return')
@@ -35,6 +39,52 @@ export class ReturnController {
     private readonly returnService: ReturnService,
     private readonly firebaseService: FirebaseService,
   ) {}
+
+  /**
+   * Admin: Get all return requests with pagination and filter by user email
+   */
+  @Get('admin/all')
+  @Roles('admin')
+  @ApiOperation({
+    summary:
+      'Admin: Get all return requests with pagination and filter by user email',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    type: String,
+    description: 'Filter by user email',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'List of return requests with pagination and user email filter',
+  })
+  async getAllReturnRequestsAdmin(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('email') email?: string,
+  ) {
+    const pageNum = page && !isNaN(page) ? page : 1;
+    const limitNum = limit && !isNaN(limit) ? limit : 10;
+    return this.returnService.getAllReturnRequestsAdmin(
+      pageNum,
+      limitNum,
+      email,
+    );
+  }
 
   @Post('request')
   @ApiOperation({
@@ -149,11 +199,8 @@ export class ReturnController {
     },
   })
   @ApiResponse({ status: 201, description: 'Return request submitted' })
-  async approveReturnRequest(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.returnService.approveReturnRequest(id, user.sub);
+  async approveReturnRequest(@Param('id') id: string) {
+    return this.returnService.approveReturnRequest(id);
   }
 
   @Patch('reject/:id')

@@ -163,4 +163,9 @@ export class UserService {
       },
     };
   }
+
+  async findByEmailPartial(email: string): Promise<UserDocument[]> {
+    console.log('Finding users by partial email:', email);
+    return this.userModel.find({ email: { $regex: email, $options: 'i' } });
+  }
 }
