@@ -16,6 +16,7 @@ import {
 } from './dto/update-delivery-status.dto';
 import { UploadProofOfDeliveryDto } from './dto/upload-proof-of-delivery.dto';
 import { OrderService } from '@/order/order.service';
+import { SkuService } from '@/sku/sku.service';
 
 const allowedTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
   [DeliveryStatus.PENDING]: [
@@ -43,6 +44,7 @@ export class DeliveryService {
     @InjectModel(Delivery.name) private deliveryModel: Model<DeliveryDocument>,
     private readonly userService: UserService,
     private readonly orderService: OrderService,
+    private readonly skuService: SkuService,
   ) {}
 
   async createDelivery(dto: CreateDeliveryDto): Promise<DeliveryDocument> {
@@ -108,6 +110,24 @@ export class DeliveryService {
       delivery.deliveryDate = new Date();
     }
 
+    // If delivery failed, restock SKUs to normal stock
+    if (nextStatus === DeliveryStatus.FAILED) {
+      // Find the order and restock each SKU
+      const order = await this.orderService.findById(String(delivery.orderId));
+      if (order && Array.isArray(order.items)) {
+        for (const item of order.items) {
+          // Increment normal stock for each SKU using SkuService
+          await this.skuService
+            .getSkuModel()
+            .findByIdAndUpdate(
+              String(item.skuId),
+              { $inc: { stock: item.quantity } },
+              { new: true },
+            );
+          // Optionally, add audit log here
+        }
+      }
+    }
     return delivery.save();
   }
 

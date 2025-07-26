@@ -14,6 +14,7 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { JwtPayload } from '@/auth/types/jwt-payload';
 import { CreateReturnRequestDto } from './dto/create-return-request.dto';
 import { ReturnService } from './return.service';
+import { FirebaseService } from '@/firebase/firebase.service';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -30,7 +31,10 @@ import { AdminRejectReturnDto } from './dto/admin-reject-return.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('return')
 export class ReturnController {
-  constructor(private readonly returnService: ReturnService) {}
+  constructor(
+    private readonly returnService: ReturnService,
+    private readonly firebaseService: FirebaseService,
+  ) {}
 
   @Post('request')
   @ApiOperation({
@@ -48,12 +52,6 @@ export class ReturnController {
           example: '683d54bbf9076e4042ec1c2e',
           description: 'Order ID (must be delivered)',
         },
-        skuId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d56708569c8587916411a',
-          description: 'SKU ID for the returned product',
-        },
         reason: {
           type: 'string',
           example: 'Product damaged during shipping',
@@ -65,9 +63,9 @@ export class ReturnController {
           description: 'Upload images as files',
         },
       },
-      required: ['orderId', 'skuId', 'reason'],
+      required: ['orderId', 'reason'],
       description:
-        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
+        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order are not allowed unless previous requests are rejected or completed.',
     },
   })
   @ApiResponse({ status: 201, description: 'Return request submitted' })
@@ -77,7 +75,23 @@ export class ReturnController {
     @Body() dto: CreateReturnRequestDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.returnService.createReturnRequest(user.sub, dto, files);
+    let imageUrls: string[] = [];
+    if (files && files.length > 0) {
+      imageUrls = await Promise.all(
+        files.map((file) =>
+          this.firebaseService.uploadFile(
+            file.buffer,
+            file.originalname,
+            file.mimetype,
+          ),
+        ),
+      );
+    }
+    // Pass imageUrls to service
+    return this.returnService.createReturnRequest(user.sub, {
+      ...dto,
+      images: imageUrls,
+    });
   }
 
   @Patch('approve/:id')
@@ -97,12 +111,6 @@ export class ReturnController {
           example: '683d54bbf9076e4042ec1c2e',
           description: 'Order ID (must be delivered)',
         },
-        skuId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d56708569c8587916411a',
-          description: 'SKU ID for the returned product',
-        },
         reason: {
           type: 'string',
           example: 'Product damaged during shipping',
@@ -114,9 +122,9 @@ export class ReturnController {
           description: 'Upload images as files',
         },
       },
-      required: ['orderId', 'skuId', 'reason'],
+      required: ['orderId', 'reason'],
       description:
-        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order/SKU are not allowed unless previous requests are rejected or completed.',
+        'Conditions: Only allowed for delivered orders. Duplicate requests for the same order are not allowed unless previous requests are rejected or completed.',
     },
   })
   @ApiResponse({ status: 201, description: 'Return request submitted' })
@@ -130,11 +138,6 @@ export class ReturnController {
           format: 'mongoid',
           example: '683d54bbf9076e4042ec1c2e',
         },
-        skuId: {
-          type: 'string',
-          format: 'mongoid',
-          example: '683d56708569c8587916411a',
-        },
         reason: { type: 'string', example: 'Product damaged during shipping' },
         images: {
           type: 'array',
@@ -142,7 +145,7 @@ export class ReturnController {
           description: 'Upload images as files',
         },
       },
-      required: ['orderId', 'skuId', 'reason'],
+      required: ['orderId', 'reason'],
     },
   })
   @ApiResponse({ status: 201, description: 'Return request submitted' })

@@ -6,6 +6,7 @@ import { DeliveryController } from './delivery.controller';
 import { UserModule } from '@/user/user.module';
 import { OrderModule } from '@/order/order.module';
 import { FirebaseModule } from '@/firebase/firebase.module';
+import { SkuModule } from '@/sku/sku.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { FirebaseModule } from '@/firebase/firebase.module';
     forwardRef(() => UserModule),
     forwardRef(() => OrderModule),
     FirebaseModule,
+    SkuModule,
   ],
   providers: [DeliveryService],
   controllers: [DeliveryController],

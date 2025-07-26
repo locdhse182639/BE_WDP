@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+// import axios from 'axios'; // Unused import removed
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -38,7 +39,7 @@ export class ReturnService {
   async createReturnRequest(
     userId: string,
     dto: CreateReturnRequestDto,
-    files?: Express.Multer.File[],
+    // files?: Express.Multer.File[], // Unused parameter removed
   ) {
     // Check order status
     const order = await this.orderService.findById(dto.orderId);
@@ -62,22 +63,9 @@ export class ReturnService {
       );
     }
 
-    let imageUrls: string[] = [];
-    if (files && files.length > 0) {
-      imageUrls = await Promise.all(
-        files.map((file) =>
-          this.firebaseService.uploadFile(
-            file.buffer,
-            file.originalname,
-            file.mimetype,
-          ),
-        ),
-      );
-    }
     const request = new this.returnRequestModel({
       ...dto,
       userId,
-      images: imageUrls.length > 0 ? imageUrls : dto.images,
       status: 'pending',
     });
     return request.save();
@@ -99,23 +87,42 @@ export class ReturnService {
       request.status = 'approved';
       if (adminNotes) request.adminNotes = adminNotes;
       await request.save({ session });
-      // Increment returnedStock in SKU atomically and set isReturned to true
-      await this.skuService.getSkuModel().findByIdAndUpdate(
-        request.skuId,
-        {
-          $inc: { returnedStock: request.quantity ?? 1 },
-          $set: { isReturned: true },
-        },
-        { new: true, session },
-      );
-      // Audit log
-      logInventoryChange({
-        skuId: request.skuId,
-        quantity: request.quantity ?? 1,
-        action: 'return_approved',
-        reason: undefined,
-        userId: request.userId,
-      });
+
+      // Get order details
+      const order = await this.orderService.findById(String(request.orderId));
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Map to sum quantities for each SKU (handle duplicates)
+      const skuQuantityMap = new Map();
+      for (const item of order.items) {
+        const skuId = String(item.skuId);
+        const qty = item.quantity ?? 1;
+        skuQuantityMap.set(skuId, (skuQuantityMap.get(skuId) ?? 0) + qty);
+      }
+
+      // Increment returnedStock for all SKUs in the order
+      for (const [skuIdRaw, quantityRaw] of skuQuantityMap.entries()) {
+        const skuId: string = String(skuIdRaw);
+        const quantity: number = Number(quantityRaw);
+        await this.skuService.getSkuModel().findByIdAndUpdate(
+          skuId,
+          {
+            $inc: { returnedStock: quantity },
+            $set: { isReturned: true },
+          },
+          { new: true, session },
+        );
+        // Audit log for each SKU
+        logInventoryChange({
+          skuId,
+          quantity,
+          action: 'return_approved',
+          reason: undefined,
+          userId: request.userId,
+        });
+      }
 
       // Send email notification for return approval
       const user = await this.userService.findById(String(request.userId));
@@ -127,17 +134,13 @@ export class ReturnService {
         );
       }
 
-      // Automatically trigger refund after approval
-      // Get order details for refund
-      const order = await this.orderService.findById(String(request.orderId));
-      console.log('[DEBUG] Order for refund:', order);
+      // Automatically trigger refund for the whole order
       if (order && order.paymentIntentId) {
-        console.log('[DEBUG] paymentIntentId:', order.paymentIntentId);
         await this.refundService.createRefundRequest(
           String(order._id),
           String(request.userId),
           order.totalAmount,
-          'Return approved',
+          'Return approved (whole order)',
           order.paymentIntentId,
         );
         // Send email notification for refund initiation
