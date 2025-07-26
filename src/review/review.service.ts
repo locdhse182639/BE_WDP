@@ -57,9 +57,9 @@ export class ReviewService {
   }
 
   async getReviews(filter: any = {}): Promise<Review[]> {
-    // Exclude deleted reviews
     return this.reviewModel
       .find({ ...filter, deleted: false })
+      .populate({ path: 'userId', select: 'email' })
       .sort({ createdAt: -1 });
   }
   async editReview(
