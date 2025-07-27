@@ -16,9 +16,6 @@ export class ReturnRequest {
   @Prop({ type: Types.ObjectId, ref: 'Order', required: true })
   orderId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Sku', required: true })
-  skuId: Types.ObjectId;
-
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
@@ -45,21 +42,3 @@ export class ReturnRequest {
 }
 
 export const ReturnRequestSchema = SchemaFactory.createForClass(ReturnRequest);
-
-// Mongoose post-save hook to automate returnedStock increment in SKU when a return is approved
-ReturnRequestSchema.post('save', async function (doc) {
-  // Only act if status is 'approved' and was just set
-  if (doc.status === 'approved' && doc.isModified && doc.isModified('status')) {
-    try {
-      // Access the Sku model from the same mongoose connection
-      const SkuModel = doc.$model('Sku');
-      await SkuModel.findByIdAndUpdate(
-        doc.skuId,
-        { $inc: { returnedStock: doc.quantity ?? 1 } },
-        { new: true },
-      );
-    } catch {
-      // Optionally log error
-    }
-  }
-});

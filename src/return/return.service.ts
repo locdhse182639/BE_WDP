@@ -167,14 +167,19 @@ export class ReturnService {
     request.adminRejectReason = reason;
     request.adminNotes = adminNotes;
     await request.save();
-    // Audit log for rejection
-    logInventoryChange({
-      skuId: request.skuId,
-      quantity: request.quantity ?? 1,
-      action: 'return_rejected',
-      reason,
-      userId: request.userId,
-    });
+    // Audit log for rejection: log each SKU in the order
+    const order = await this.orderService.findById(String(request.orderId));
+    if (order && Array.isArray(order.items)) {
+      for (const item of order.items) {
+        logInventoryChange({
+          skuId: item.skuId,
+          quantity: item.quantity ?? 1,
+          action: 'return_rejected',
+          reason,
+          userId: request.userId,
+        });
+      }
+    }
     return request;
   }
 
