@@ -80,7 +80,7 @@ export class OrderController {
   }
 
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles('admin')
+  @Roles('admin', 'delivery')
   @Put(':id/status')
   @ApiBearerAuth()
   async updateOrderStatus(
