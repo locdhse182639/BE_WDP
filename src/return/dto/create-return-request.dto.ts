@@ -6,10 +6,6 @@ export class CreateReturnRequestDto {
   @IsMongoId()
   orderId: string;
 
-  @ApiProperty({ description: 'SKU ID being returned' })
-  @IsMongoId()
-  skuId: string;
-
   @ApiProperty({ description: 'Reason for return' })
   @IsString()
   reason: string;
