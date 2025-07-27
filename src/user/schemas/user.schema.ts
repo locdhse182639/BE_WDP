@@ -30,12 +30,6 @@ export class User {
   emailVerificationToken?: string;
 
   @Prop()
-  passwordResetToken?: string;
-
-  @Prop()
-  passwordResetExpires?: Date;
-
-  @Prop()
   lastLogin?: Date;
 
   @Prop({ default: false })
@@ -67,6 +61,12 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   deviceTokens: string[];
+
+  @Prop()
+  passwordResetOtp?: string;
+
+  @Prop()
+  passwordResetExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

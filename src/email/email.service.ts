@@ -40,4 +40,10 @@ export class EmailService {
     const html = `<p>Please verify your email by clicking the link below:</p><a href="${verifyUrl}">${verifyUrl}</a>`;
     await this.sendMail(to, 'Verify your email', html);
   }
+
+  async sendPasswordResetEmail(email: string, otp: string): Promise<void> {
+    const html = `<p>You requested a password reset. Use the OTP below to reset your password:</p><h2>${otp}</h2><p>If you did not request this, please ignore this email.</p>`;
+    await this.sendMail(email, 'Your password reset OTP', html);
+    this.logger.log(`Password reset OTP email sent to ${email}`);
+  }
 }

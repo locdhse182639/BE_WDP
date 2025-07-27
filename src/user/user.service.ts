@@ -168,4 +168,47 @@ export class UserService {
     console.log('Finding users by partial email:', email);
     return this.userModel.find({ email: { $regex: email, $options: 'i' } });
   }
+
+  // Request password reset: generate OTP and email to user
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException('User not found');
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.passwordResetOtp = otp;
+    user.passwordResetExpires = new Date(Date.now() + 1000 * 60 * 10); // 10 min expiry
+    await user.save();
+    await this.emailService.sendPasswordResetEmail(user.email, otp);
+    return { message: 'Password reset OTP sent' };
+  }
+
+  // Reset password using OTP
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({ email, passwordResetOtp: otp });
+    if (
+      !user ||
+      !user.passwordResetExpires ||
+      user.passwordResetExpires < new Date()
+    ) {
+      throw new NotFoundException('Invalid or expired OTP');
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordResetOtp = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    return { message: 'Password has been reset' };
+  }
+
+  // Admin: update user role
+  async updateUserRole(userId: string, role: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    user.role = role;
+    await user.save();
+    return user;
+  }
 }

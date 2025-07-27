@@ -7,6 +7,7 @@ import {
   Query,
   UnauthorizedException,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,9 +25,14 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
   ApiBearerAuth,
+  ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -122,5 +128,39 @@ export class UserController {
     @Query('token') token: string,
   ) {
     return this.userService.verifyEmail(user.sub, token);
+  }
+
+  // Request password reset OTP
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset OTP' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({ status: 201, description: 'OTP sent to user email' })
+  async requestPasswordReset(@Body() dto: ForgotPasswordDto) {
+    return this.userService.requestPasswordReset(dto.email);
+  }
+
+  // Reset password using OTP
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password using OTP' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({ status: 201, description: 'Password has been reset' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.userService.resetPassword(dto.email, dto.otp, dto.newPassword);
+  }
+
+  // Admin: update user role
+  @Patch('role/:userId')
+  @UseGuards(JwtAuthGuard)
+  @Roles('admin')
+  @Patch('role/:userId')
+  @ApiOperation({ summary: 'Admin: Update user role' })
+  @ApiParam({ name: 'userId', required: true })
+  @ApiBody({ type: UpdateUserRoleDto })
+  @ApiResponse({ status: 200, description: 'User role updated' })
+  async updateUserRole(
+    @Param('userId') userId: string,
+    @Body() dto: UpdateUserRoleDto,
+  ) {
+    return this.userService.updateUserRole(userId, dto.role);
   }
 }
