@@ -48,14 +48,11 @@ export class ReturnService {
     // Prevent duplicate requests for same order/SKU unless previous is rejected/completed
     const existingRequest = await this.returnRequestModel.findOne({
       orderId: dto.orderId,
-      skuId: dto.skuId,
       userId,
       status: { $in: ['pending', 'approved'] },
     });
     if (existingRequest) {
-      throw new Error(
-        'A return request for this order and SKU is already active',
-      );
+      throw new Error('A return request for this order is already active');
     }
 
     const request = new this.returnRequestModel({
